@@ -1,0 +1,1599 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Novare Snake Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            overflow: hidden;
+            padding-top: 10px;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 500px;
+        }
+        
+        .logo {
+            width: 120px;
+            margin-bottom: 5px;
+        }
+        
+        .scores {
+            display: flex;
+            justify-content: space-between;
+            width: 90%;
+            background-color: #2a2a2a;
+            border-radius: 10px;
+            padding: 8px 15px;
+            margin-bottom: 10px;
+        }
+        
+        canvas {
+            background-color: #2a2a2a;
+            border: 2px solid #404040;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Mode indicator */
+        .mode-indicator {
+            margin-top: 5px;
+            font-size: 14px;
+            padding: 5px 12px;
+            border-radius: 12px;
+            background-color: #2a2a2a;
+            display: none;
+            animation: pulse 1.5s infinite alternate;
+        }
+        
+        .mode-indicator.level2 {
+            background-color: #5a2a2a;
+            color: #ffdddd;
+        }
+        
+        @keyframes pulse {
+            from { opacity: 0.7; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1.02); }
+        }
+        
+        .mode-timer {
+            margin-left: 5px;
+            font-weight: bold;
+        }
+        
+        /* Canvas border transition */
+        @keyframes borderPulse {
+            0% { border-color: #404040; }
+            50% { border-color: #802020; }
+            100% { border-color: #404040; }
+        }
+        
+        /* Game over overlay */
+        #gameOver {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        
+        .gameOverContent {
+            background-color: #2a2a2a;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            width: 80%;
+            max-width: 300px;
+        }
+        
+        .gameOverContent h2 {
+            margin-top: 0;
+        }
+        
+        .gameOverContent button {
+            background-color: #404040;
+            color: #e0e0e0;
+            border: none;
+            padding: 15px 30px;
+            margin: 10px;
+            border-radius: 5px;
+            font-size: 16px;
+            width: 80%;
+        }
+        
+        a {
+            text-decoration: none;
+            width: 80%;
+        }
+        
+        /* Full-width button wrapped in anchor */
+        a button {
+            width: 100%;
+        }
+        
+        .restart-link {
+            text-decoration: none;
+            width: 80%;
+            display: block;
+        }
+        
+        /* Virtual joystick */
+        .joystick-container {
+            margin-top: 15px;
+            position: relative;
+            width: 150px;
+            height: 150px;
+        }
+        
+        .joystick-background {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: rgba(64, 64, 64, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .joystick-button {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #808080;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+        }
+        
+        .joystick-arrows {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .joystick-arrow {
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-style: solid;
+        }
+        
+        .arrow-up {
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 0 12px 16px 12px;
+            border-color: transparent transparent #606060 transparent;
+        }
+        
+        .arrow-down {
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 16px 12px 0 12px;
+            border-color: #606060 transparent transparent transparent;
+        }
+        
+        .arrow-left {
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-width: 12px 16px 12px 0;
+            border-color: transparent #606060 transparent transparent;
+        }
+        
+        .arrow-right {
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-width: 12px 0 12px 16px;
+            border-color: transparent transparent transparent #606060;
+        }
+        
+        /* Share modal */
+        #shareModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 110;
+        }
+        
+        .modalContent {
+            background-color: #2a2a2a;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            width: 80%;
+            max-width: 300px;
+        }
+        
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 15px 0;
+            background-color: #3a3a3a;
+            border: none;
+            border-radius: 5px;
+            color: #e0e0e0;
+            font-size: 16px;
+        }
+        
+        /* Mobile-friendly share result */
+        #shareResult {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 120;
+        }
+        
+        .shareResultContent {
+            background-color: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+        
+        .scoreCard {
+            background-color: #1a1a1a;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            border: 2px solid #404040;
+            position: relative;
+        }
+        
+        .playerName {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .scoreValue {
+            font-size: 36px;
+            margin: 10px 0;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .score-digit {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+        
+        .shareLogo {
+            width: 120px;
+            margin: 10px 0;
+        }
+        
+        .socialHandle {
+            color: #808080;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="novare-logo-new.png" alt="Novare Logo" class="logo">
+        
+        <div class="scores">
+            <div>Score: <span id="currentScore">0</span></div>
+            <div>High Score: <span id="highScore">0</span></div>
+        </div>
+        
+        <canvas id="gameCanvas" width="285" height="285"></canvas>
+        
+        <div id="modeIndicator" class="mode-indicator">
+            BONUS MODE: <span id="modeTimer" class="mode-timer">8.0</span>s
+        </div>
+        
+        <div id="mode2Indicator" class="mode-indicator level2">
+            WALL MODE: <span id="mode2Timer" class="mode-timer">20.0</span>s
+        </div>
+        
+        <!-- Virtual Joystick -->
+        <div class="joystick-container">
+            <div class="joystick-background">
+                <div class="joystick-button" id="joystickButton"></div>
+                <div class="joystick-arrows">
+                    <div class="joystick-arrow arrow-up"></div>
+                    <div class="joystick-arrow arrow-down"></div>
+                    <div class="joystick-arrow arrow-left"></div>
+                    <div class="joystick-arrow arrow-right"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="gameOver">
+        <div class="gameOverContent">
+            <h2>Game Over!</h2>
+            <p>Score: <span id="finalScore">0</span></p>
+            <p id="newHighScoreText" style="display: none;">New High Score!</p>
+            
+            <!-- Ultra-simple button for mobile -->
+            <button id="playAgainBtn" style="width: 80%; background-color: #404040; color: #e0e0e0; border: none; padding: 15px 30px; margin: 10px; border-radius: 5px; font-size: 16px;">Play Again</button>
+            <button type="button" onclick="showShareModal()" style="width: 80%; background-color: #404040; color: #e0e0e0; border: none; padding: 15px 30px; margin: 10px; border-radius: 5px; font-size: 16px;">Share High Score</button>
+        </div>
+    </div>
+    
+    <!-- Share Modal -->
+    <div id="shareModal">
+        <div class="modalContent">
+            <h3>Share Your High Score</h3>
+            <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
+            <div>
+                <button onclick="hideShareModal()" style="width: 45%; background-color: #404040; color: #e0e0e0; border: none; padding: 10px; margin: 5px; border-radius: 5px;">Cancel</button>
+                <button onclick="showShareResult()" style="width: 45%; background-color: #404040; color: #e0e0e0; border: none; padding: 10px; margin: 5px; border-radius: 5px;">Share</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Mobile-friendly Share Result -->
+    <div id="shareResult">
+        <div class="shareResultContent">
+            <img src="novare-logo-new.png" alt="Novare Logo" class="shareLogo">
+            <div class="scoreCard">
+                <div class="playerName" id="resultPlayerName">Player Name</div>
+                <div class="scoreValue" id="resultHighScore">0</div>
+                <div>HIGH SCORE</div>
+                <div class="socialHandle">@project.novare</div>
+            </div>
+            <p>Take a screenshot to share your score!</p>
+            <button onclick="closeShareResult()" style="width: 80%; background-color: #404040; color: #e0e0e0; border: none; padding: 15px; margin: 10px; border-radius: 5px;">Close</button>
+        </div>
+    </div>
+    
+    <script>
+        // Game variables
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gridSize = 19; // Increased grid size for more visible elements
+        const baseCanvasSize = 285; // Original canvas size
+        let canvasSize = baseCanvasSize;
+        let playableGridSize = Math.floor(canvasSize / gridSize);
+        let snake = [{x: 5, y: 5}];
+        let food = {x: 10, y: 10};
+        let bonusFood = [];
+        let wallCells = []; // Track wall cells for wall mode
+        let direction = 'right';
+        let nextDirection = 'right';
+        let score = 0;
+        let highScore = localStorage.getItem('snakeHighScore') || 0;
+        let gameSpeed = 150; // Base speed
+        let currentSpeed = gameSpeed;
+        let gameOver = false;
+        let lastFrameTime = 0;
+        let accumulator = 0;
+        let permanentSpeedBoost = 1.0; // Multiplier for permanent speed boost
+        
+        // Bonus mode variables
+        let bonusModeActive = false;
+        let bonusModeTimer = 8.0;
+        let bonusModeInterval = null;
+        let originalSnakeLength = 0;
+        
+        // Expansion mode variables (level 2 bonus)
+        let wallModeActive = false;
+        let wallModeTimer = 20.0;
+        let wallModeInterval = null;
+        let maxCanvasExpansion = 75; // How many pixels to expand
+        let currentExpansion = 0;
+        let expansionSpeed = 2; // Pixels per interval
+        let expansionDirection = 1; // 1 = expanding, -1 = contracting
+        let wallModeMovesBeforeWalls = 5; // Moves to wait before building walls
+        let wallModeCurrentMoves = 0; // Counter for moves made in wall mode
+        
+        // Game effects
+        let effectsQueue = [];
+        
+        // Update high score display
+        document.getElementById('highScore').textContent = highScore;
+        
+        // Game loop using requestAnimationFrame for smoother animation
+        function gameLoop(timestamp) {
+            if (gameOver) return;
+            
+            if (!lastFrameTime) lastFrameTime = timestamp;
+            const deltaTime = (timestamp - lastFrameTime) / 1000; // Convert to seconds
+            lastFrameTime = timestamp;
+            
+            accumulator += deltaTime;
+            
+            // Update game state based on current speed
+            const updateInterval = currentSpeed / 1000; // Convert to seconds
+            
+            while (accumulator >= updateInterval) {
+                moveSnake();
+                accumulator -= updateInterval;
+            }
+            
+            // Always draw
+            drawGame();
+            
+            // Process visual effects
+            processEffects(deltaTime);
+            
+            // Continue loop if not game over
+            if (!gameOver) {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+        
+        // Move snake
+        function moveSnake() {
+            if (gameOver) return;
+            
+            direction = nextDirection;
+            const head = {...snake[0]};
+            
+            switch (direction) {
+                case 'up': head.y--; break;
+                case 'down': head.y++; break;
+                case 'left': head.x--; break;
+                case 'right': head.x++; break;
+            }
+            
+            // Determine max positions based on current canvas size
+            const maxX = Math.floor(canvasSize / gridSize) - 1;
+            const maxY = Math.floor(canvasSize / gridSize) - 1;
+            
+            // Check collisions with walls, adjusting for dynamic canvas size
+            if (head.x < 0 || head.x > maxX || 
+                head.y < 0 || head.y > maxY ||
+                snake.some(segment => segment.x === head.x && segment.y === head.y) ||
+                wallCells.some(wall => wall.x === head.x && wall.y === head.y)) {
+                showGameOver();
+                return;
+            }
+            
+            snake.unshift(head);
+            
+            // Check if food is eaten
+            if (head.x === food.x && head.y === food.y) {
+                score += 10;
+                document.getElementById('currentScore').textContent = score;
+                
+                // Check if we need permanent speed boost (for score >= 250)
+                if (score >= 250 && !wallModeActive && !bonusModeActive) {
+                    permanentSpeedBoost *= 0.97; // 3% speed increase
+                    currentSpeed = gameSpeed * permanentSpeedBoost;
+                    
+                    // Add effect for speed boost
+                    addEffect({
+                        type: 'popup',
+                        text: 'SPEED UP!',
+                        x: canvas.width / 2,
+                        y: canvas.height / 2,
+                        size: 22,
+                        color: '#88ffff',
+                        life: 1.0,
+                        maxLife: 1.0
+                    });
+                }
+                
+                // Check if we need to start bonus modes
+                if (score === 200 && !wallModeActive && !bonusModeActive) {
+                    startWallMode();
+                } else if (score === 100 && !bonusModeActive && !wallModeActive) {
+                    startBonusMode();
+                } else {
+                    generateFood();
+                }
+                
+                // Speed up game slightly
+                if (currentSpeed > 70) currentSpeed -= 1;
+                
+                // Add score popup effect
+                addEffect({
+                    type: 'popup',
+                    text: '+10',
+                    x: head.x * gridSize + gridSize / 2,
+                    y: head.y * gridSize,
+                    color: '#88ff88',
+                    life: 0.8,
+                    maxLife: 0.8
+                });
+            } 
+            // Check if bonus food is eaten
+            else if (bonusModeActive) {
+                let bonusFoodEaten = false;
+                
+                for (let i = bonusFood.length - 1; i >= 0; i--) {
+                    if (head.x === bonusFood[i].x && head.y === bonusFood[i].y) {
+                        bonusFood.splice(i, 1);
+                        bonusFoodEaten = true;
+                        
+                        // Add effect for collecting bonus food (no points)
+                        addEffect({
+                            type: 'popup',
+                            text: 'COLLECTED!',
+                            x: head.x * gridSize + gridSize / 2,
+                            y: head.y * gridSize,
+                            color: '#ffaa00',
+                            life: 0.8,
+                            maxLife: 0.8
+                        });
+                        
+                        // If all bonus food eaten
+                        if (bonusFood.length === 0) {
+                            endBonusMode(true);
+                        }
+                        
+                        break;
+                    }
+                }
+                
+                // If no bonus food was eaten, remove the tail
+                if (!bonusFoodEaten) {
+                    snake.pop();
+                }
+            }
+            // In wall mode, don't remove tail and add positions to wall cells
+            else if (wallModeActive) {
+                let wallFoodEaten = false;
+                
+                for (let i = bonusFood.length - 1; i >= 0; i--) {
+                    if (head.x === bonusFood[i].x && head.y === bonusFood[i].y) {
+                        bonusFood.splice(i, 1);
+                        score += 10;
+                        document.getElementById('currentScore').textContent = score;
+                        wallFoodEaten = true;
+                        
+                        // Add score popup effect
+                        addEffect({
+                            type: 'popup',
+                            text: '+10',
+                            x: head.x * gridSize + gridSize / 2,
+                            y: head.y * gridSize,
+                            color: '#ffaa00',
+                            life: 0.8,
+                            maxLife: 0.8
+                        });
+                        
+                        // If all wall food eaten
+                        if (bonusFood.length === 0) {
+                            endWallMode(true);
+                        }
+                        
+                        break;
+                    }
+                }
+                
+                // Increment move counter
+                wallModeCurrentMoves++;
+                
+                // Add the tail position to the wall cells (not the head) only after grace period
+                if (snake.length > 1 && wallModeCurrentMoves > wallModeMovesBeforeWalls) {
+                    const tail = snake[snake.length - 1];
+                    // Check if this position already exists in wallCells to avoid duplicates
+                    if (!wallCells.some(wall => wall.x === tail.x && wall.y === tail.y)) {
+                        wallCells.push({...tail});
+                        
+                        // First wall block placed - add effect
+                        if (wallCells.length === 1) {
+                            addEffect({
+                                type: 'popup',
+                                text: 'WALLS ACTIVATED!',
+                                x: canvas.width / 2,
+                                y: canvas.height / 2,
+                                size: 20,
+                                color: '#ff6666',
+                                life: 1.0,
+                                maxLife: 1.0
+                            });
+                        }
+                    }
+                    
+                    // Remove the tail segment from the snake
+                    if (!wallFoodEaten) {
+                        snake.pop();
+                    }
+                } else if (!wallFoodEaten) {
+                    // During grace period, still remove the tail if no food was eaten
+                    snake.pop();
+                }
+            }
+            else {
+                snake.pop();
+            }
+        }
+        
+        // Draw game
+        function drawGame() {
+            // Clear canvas
+            ctx.fillStyle = '#2a2a2a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw grid
+            ctx.strokeStyle = '#333333';
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i <= canvas.width; i += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, canvas.height);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(canvas.width, i);
+                ctx.stroke();
+            }
+            
+            // Draw regular food if not in bonus mode or if bonus food is depleted
+            if ((!bonusModeActive && !wallModeActive) || 
+                (bonusModeActive && bonusFood.length === 0) || 
+                (wallModeActive && bonusFood.length === 0)) {
+                // Make regular food slightly larger for better visibility
+                const foodSize = gridSize - 2;
+                ctx.fillStyle = '#808080';
+                ctx.fillRect(
+                    food.x * gridSize + (gridSize - foodSize) / 2,
+                    food.y * gridSize + (gridSize - foodSize) / 2,
+                    foodSize,
+                    foodSize
+                );
+            }
+            
+            // Draw bonus food
+            if (bonusModeActive || wallModeActive) {
+                const now = Date.now() * 0.003;  // For animation
+                bonusFood.forEach(food => {
+                    // Create glowing effect
+                    const glow = 0.5 + 0.5 * Math.sin(now + food.x + food.y);
+                    const size = gridSize - 2 + glow;
+                    
+                    // Draw glow
+                    const glowColor = bonusModeActive ? 
+                        `rgba(255, 200, 0, ${0.3 + 0.2 * glow})` : 
+                        `rgba(255, 100, 100, ${0.3 + 0.2 * glow})`;
+                    ctx.fillStyle = glowColor;
+                    ctx.beginPath();
+                    if (ctx.roundRect) {
+                        ctx.roundRect(
+                            food.x * gridSize + (gridSize - size) / 2 - 1,
+                            food.y * gridSize + (gridSize - size) / 2 - 1,
+                            size + 2,
+                            size + 2,
+                            4
+                        );
+                    } else {
+                        ctx.rect(
+                            food.x * gridSize + (gridSize - size) / 2 - 1,
+                            food.y * gridSize + (gridSize - size) / 2 - 1,
+                            size + 2,
+                            size + 2
+                        );
+                    }
+                    ctx.fill();
+                    
+                    // Draw food
+                    const foodColor = bonusModeActive ? 
+                        `rgb(255, ${150 + 50 * glow}, 0)` : 
+                        `rgb(255, ${80 + 40 * glow}, ${80 + 40 * glow})`;
+                    ctx.fillStyle = foodColor;
+                    ctx.beginPath();
+                    if (ctx.roundRect) {
+                        ctx.roundRect(
+                            food.x * gridSize + (gridSize - size) / 2,
+                            food.y * gridSize + (gridSize - size) / 2,
+                            size,
+                            size,
+                            3
+                        );
+                    } else {
+                        ctx.rect(
+                            food.x * gridSize + (gridSize - size) / 2,
+                            food.y * gridSize + (gridSize - size) / 2,
+                            size,
+                            size
+                        );
+                    }
+                    ctx.fill();
+                });
+            }
+            
+            // Draw wall cells for wall mode
+            if (wallModeActive || wallCells.length > 0) {
+                ctx.fillStyle = '#664466'; // Purple color for all wall cells
+                wallCells.forEach(wall => {
+                    ctx.fillRect(
+                        wall.x * gridSize,
+                        wall.y * gridSize,
+                        gridSize - 1,
+                        gridSize - 1
+                    );
+                });
+            }
+            
+            // Draw snake
+            snake.forEach((segment, index) => {
+                // Head is white, body is gray with gradient
+                let color = '#606060';
+                if (index === 0) {
+                    color = '#e0e0e0';
+                } else {
+                    // Create a gradient for the body
+                    const darkness = Math.min(0.8, 0.4 + (index / snake.length) * 0.4);
+                    color = `rgba(96, 96, 96, ${1 - darkness})`;
+                }
+                
+                ctx.fillStyle = color;
+                
+                // Round corners for the head
+                if (index === 0) {
+                    ctx.beginPath();
+                    if (ctx.roundRect) {
+                        ctx.roundRect(
+                            segment.x * gridSize,
+                            segment.y * gridSize,
+                            gridSize - 2,
+                            gridSize - 2,
+                            3
+                        );
+                    } else {
+                        ctx.rect(
+                            segment.x * gridSize,
+                            segment.y * gridSize,
+                            gridSize - 2,
+                            gridSize - 2
+                        );
+                    }
+                    ctx.fill();
+                    
+                    // Add eyes
+                    ctx.fillStyle = '#2a2a2a';
+                    const eyeSize = 3;
+                    const eyeOffset = 4;
+                    
+                    // Position eyes based on direction
+                    let eyeX1, eyeY1, eyeX2, eyeY2;
+                    switch(direction) {
+                        case 'up':
+                            eyeX1 = segment.x * gridSize + eyeOffset;
+                            eyeY1 = segment.y * gridSize + eyeOffset;
+                            eyeX2 = segment.x * gridSize + gridSize - eyeOffset - eyeSize;
+                            eyeY2 = segment.y * gridSize + eyeOffset;
+                            break;
+                        case 'down':
+                            eyeX1 = segment.x * gridSize + eyeOffset;
+                            eyeY1 = segment.y * gridSize + gridSize - eyeOffset - eyeSize;
+                            eyeX2 = segment.x * gridSize + gridSize - eyeOffset - eyeSize;
+                            eyeY2 = segment.y * gridSize + gridSize - eyeOffset - eyeSize;
+                            break;
+                        case 'left':
+                            eyeX1 = segment.x * gridSize + eyeOffset;
+                            eyeY1 = segment.y * gridSize + eyeOffset;
+                            eyeX2 = segment.x * gridSize + eyeOffset;
+                            eyeY2 = segment.y * gridSize + gridSize - eyeOffset - eyeSize;
+                            break;
+                        case 'right':
+                            eyeX1 = segment.x * gridSize + gridSize - eyeOffset - eyeSize;
+                            eyeY1 = segment.y * gridSize + eyeOffset;
+                            eyeX2 = segment.x * gridSize + gridSize - eyeOffset - eyeSize;
+                            eyeY2 = segment.y * gridSize + gridSize - eyeOffset - eyeSize;
+                            break;
+                    }
+                    
+                    ctx.fillRect(eyeX1, eyeY1, eyeSize, eyeSize);
+                    ctx.fillRect(eyeX2, eyeY2, eyeSize, eyeSize);
+                } else {
+                    ctx.fillRect(
+                        segment.x * gridSize,
+                        segment.y * gridSize,
+                        gridSize - 2,
+                        gridSize - 2
+                    );
+                }
+            });
+            
+            // Draw effects
+            drawEffects();
+        }
+        
+        // Generate food
+        function generateFood() {
+            const maxPos = Math.floor(canvasSize / gridSize) - 1;
+            let attempts = 0;
+            const maxAttempts = 100; // Increased for better chances
+            
+            do {
+                food = {
+                    x: Math.floor(Math.random() * maxPos),
+                    y: Math.floor(Math.random() * maxPos)
+                };
+                attempts++;
+                
+                // Avoid infinite loop by systematically trying positions if random fails
+                if (attempts > maxAttempts) {
+                    // Try every position on the board systematically
+                    let foundValidPos = false;
+                    
+                    for (let testX = 0; testX <= maxPos && !foundValidPos; testX++) {
+                        for (let testY = 0; testY <= maxPos && !foundValidPos; testY++) {
+                            // Check if this position is valid
+                            if (isValidFoodPosition(testX, testY)) {
+                                food = { x: testX, y: testY };
+                                foundValidPos = true;
+                            }
+                        }
+                    }
+                    
+                    // If we've exhaustively checked and still can't find a spot, just return
+                    if (!foundValidPos) {
+                        console.log("No valid positions found for food. Board might be full.");
+                        return;
+                    }
+                    
+                    break;
+                }
+            } while (!isValidFoodPosition(food.x, food.y));
+        }
+        
+        // Helper function to check if a position is valid for food
+        function isValidFoodPosition(x, y) {
+            // Check if position is in the snake
+            if (snake.some(segment => segment.x === x && segment.y === y)) {
+                return false;
+            }
+            
+            // Check if position is in existing food
+            if (bonusFood.some(bf => bf.x === x && bf.y === y)) {
+                return false;
+            }
+            
+            // Check if position is in wall cells
+            if (wallCells.some(wall => wall.x === x && wall.y === y)) {
+                return false;
+            }
+            
+            // Special case for wall mode: Don't spawn at the current tail position
+            // even if it's not yet added to wallCells
+            if (wallModeActive && snake.length > 1) {
+                const tail = snake[snake.length - 1];
+                if (x === tail.x && y === tail.y) {
+                    return false;
+                }
+            }
+            
+            // Make sure the position is within the current visible canvas
+            // This prevents food from spawning outside the visible area during contraction
+            const currentMaxPos = Math.floor(canvasSize / gridSize) - 1;
+            if (x < 0 || x > currentMaxPos || y < 0 || y > currentMaxPos) {
+                return false;
+            }
+            
+            // Position is valid if it passed all checks
+            return true;
+        }
+        
+        // Bonus mode functions
+        function startBonusMode() {
+            bonusModeActive = true;
+            bonusModeTimer = 8.0;
+            bonusFood = [];
+            
+            // Store the original snake length
+            originalSnakeLength = snake.length;
+            
+            // Generate 5 bonus food items
+            const maxPos = Math.floor(canvasSize / gridSize) - 1;
+            for (let i = 0; i < 5; i++) {
+                let newFood;
+                let attempts = 0;
+                const maxAttempts = 100; // Increased for better chances
+                
+                do {
+                    newFood = {
+                        x: Math.floor(Math.random() * maxPos),
+                        y: Math.floor(Math.random() * maxPos)
+                    };
+                    attempts++;
+                    
+                    // Systematically try positions if random fails
+                    if (attempts > maxAttempts) {
+                        // Try every position on the board systematically
+                        let foundValidPos = false;
+                        
+                        for (let testX = 0; testX <= maxPos && !foundValidPos; testX++) {
+                            for (let testY = 0; testY <= maxPos && !foundValidPos; testY++) {
+                                // Check if this position is valid using the helper function
+                                if (isValidFoodPosition(testX, testY)) {
+                                    newFood = { x: testX, y: testY };
+                                    foundValidPos = true;
+                                }
+                            }
+                        }
+                        
+                        // If we've exhaustively checked and still can't find a spot, just exit the loop
+                        if (!foundValidPos) {
+                            console.log("No valid positions found for bonus food. Board might be full.");
+                            break; // Continue with fewer than 5 bonus food items
+                        }
+                        
+                        break; // Exit the inner while loop
+                    }
+                } while (!isValidFoodPosition(newFood.x, newFood.y));
+                
+                // Only add the food if we found a valid position
+                if (newFood) {
+                    bonusFood.push(newFood);
+                }
+            }
+            
+            // Apply speed boost (17% faster)
+            currentSpeed = gameSpeed * permanentSpeedBoost * 0.83;
+            
+            // Show mode indicator
+            document.getElementById('modeIndicator').style.display = 'block';
+            document.getElementById('modeTimer').textContent = bonusModeTimer.toFixed(1);
+            
+            // Set timer update
+            bonusModeInterval = setInterval(() => {
+                bonusModeTimer -= 0.1;
+                document.getElementById('modeTimer').textContent = Math.max(0, bonusModeTimer).toFixed(1);
+                
+                if (bonusModeTimer <= 0) {
+                    endBonusMode(false);
+                }
+            }, 100);
+            
+            // Add "Bonus Mode" effect
+            addEffect({
+                type: 'popup',
+                text: 'BONUS MODE!',
+                x: canvas.width / 2,
+                y: canvas.height / 2,
+                size: 24,
+                color: '#ffaa00',
+                life: 1.5,
+                maxLife: 1.5
+            });
+        }
+        
+        function endBonusMode(success) {
+            clearInterval(bonusModeInterval);
+            bonusModeActive = false;
+            
+            // Hide mode indicator
+            document.getElementById('modeIndicator').style.display = 'none';
+            
+            // Reset speed to normal with permanent boost factor
+            currentSpeed = gameSpeed * permanentSpeedBoost;
+            
+            // Clear any remaining bonus food
+            bonusFood = [];
+            
+            // Generate regular food
+            generateFood();
+            
+            // Award extra points if successful
+            if (success) {
+                score += 50;
+                document.getElementById('currentScore').textContent = score;
+                
+                // Add effect for bonus points
+                addEffect({
+                    type: 'popup',
+                    text: '+50 BONUS!',
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    size: 24,
+                    color: '#ffff00',
+                    life: 1.5,
+                    maxLife: 1.5
+                });
+            } else {
+                // Penalty - set score to next lowest 10 (or subtract 40, minimum 10 points)
+                const prevScore = score;
+                score = Math.max(10, score - 40);
+                document.getElementById('currentScore').textContent = score;
+                
+                // Add effect for penalty
+                addEffect({
+                    type: 'popup',
+                    text: `TIME'S UP! -${prevScore - score}`,
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    size: 20,
+                    color: '#ff5555',
+                    life: 1.5,
+                    maxLife: 1.5
+                });
+            }
+        }
+        
+        // Wall mode functions (formerly expansion mode)
+        function startWallMode() {
+            wallModeActive = true;
+            wallModeTimer = 20.0;
+            bonusFood = [];
+            wallCells = [];
+            wallModeCurrentMoves = 0; // Reset move counter
+            
+            // Store the original snake length
+            originalSnakeLength = snake.length;
+            
+            // Generate 5 bonus food items immediately
+            generateWallFood(5);
+            
+            // Apply speed boost (14% faster)
+            currentSpeed = gameSpeed * permanentSpeedBoost * 0.86;
+            
+            // Show mode indicator
+            document.getElementById('mode2Indicator').style.display = 'block';
+            document.getElementById('mode2Timer').textContent = wallModeTimer.toFixed(1);
+            
+            // Add border animation
+            canvas.style.animation = 'borderPulse 1s infinite';
+            
+            // Start canvas expansion
+            currentExpansion = 0;
+            expansionDirection = 1;
+            expandCanvas();
+            
+            // Set timer update
+            wallModeInterval = setInterval(() => {
+                wallModeTimer -= 0.1;
+                document.getElementById('mode2Timer').textContent = Math.max(0, wallModeTimer).toFixed(1);
+                
+                if (wallModeTimer <= 0) {
+                    endWallMode(false);
+                }
+            }, 100);
+            
+            // Add "Wall Mode" effect
+            addEffect({
+                type: 'popup',
+                text: 'WALL MODE!',
+                x: canvas.width / 2,
+                y: canvas.height / 2,
+                size: 24,
+                color: '#ff6666',
+                life: 1.5,
+                maxLife: 1.5
+            });
+        }
+        
+        function generateWallFood(count) {
+            // Generate bonus food items for wall mode
+            const maxPos = Math.floor(canvasSize / gridSize) - 1;
+            for (let i = 0; i < count; i++) {
+                let newFood;
+                let attempts = 0;
+                const maxAttempts = 100; // Increased max attempts to find valid positions
+                
+                do {
+                    newFood = {
+                        x: Math.floor(Math.random() * maxPos),
+                        y: Math.floor(Math.random() * maxPos)
+                    };
+                    attempts++;
+                    
+                    // If we can't find a valid position after many attempts, try to find any open space
+                    if (attempts > maxAttempts) {
+                        // Try every position on the board systematically
+                        let foundValidPos = false;
+                        
+                        for (let testX = 0; testX <= maxPos && !foundValidPos; testX++) {
+                            for (let testY = 0; testY <= maxPos && !foundValidPos; testY++) {
+                                // Check if this position is valid
+                                const positionIsValid = isValidFoodPosition(testX, testY);
+                                
+                                if (positionIsValid) {
+                                    newFood = { x: testX, y: testY };
+                                    foundValidPos = true;
+                                }
+                            }
+                        }
+                        
+                        // If we've exhaustively checked and still can't find a spot, just exit
+                        if (!foundValidPos) {
+                            console.log("No valid positions found for food. Board might be full.");
+                            return; // Exit the function if we can't place more food
+                        }
+                        
+                        break; // Exit the while loop since we found a valid position
+                    }
+                } while (!isValidFoodPosition(newFood.x, newFood.y));
+                
+                bonusFood.push(newFood);
+            }
+        }
+        
+        function endWallMode(success) {
+            clearInterval(wallModeInterval);
+            wallModeActive = false;
+            
+            // Hide mode indicator
+            document.getElementById('mode2Indicator').style.display = 'none';
+            
+            // Reset canvas border
+            canvas.style.animation = '';
+            canvas.style.border = '2px solid #404040';
+            
+            // Contract canvas back to original size
+            expansionDirection = -1;
+            contractCanvas();
+            
+            // Reset speed to normal with permanent boost factor
+            currentSpeed = gameSpeed * permanentSpeedBoost;
+            
+            // Clear any remaining bonus food
+            bonusFood = [];
+            
+            // Generate regular food
+            generateFood();
+            
+            // Handle success or failure
+            if (success) {
+                // Keep current score and add bonus
+                score += 30;
+                document.getElementById('currentScore').textContent = score;
+                
+                // Add success effect
+                addEffect({
+                    type: 'popup',
+                    text: '+30 WALL MASTER!',
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    size: 24,
+                    color: '#ff6666',
+                    life: 1.5,
+                    maxLife: 1.5
+                });
+            } else {
+                // Failure penalty - set to 80 points
+                const prevScore = score;
+                score = Math.min(score, 80);
+                document.getElementById('currentScore').textContent = score;
+                
+                // Shorten snake to match new score (ensure minimum length)
+                while (snake.length > Math.max(10, Math.floor(score / 10) + 1)) {
+                    snake.pop();
+                }
+                
+                // Add failure effect
+                if (prevScore !== score) {
+                    addEffect({
+                        type: 'popup',
+                        text: `WALL BREACH! -${prevScore - score}`,
+                        x: canvas.width / 2,
+                        y: canvas.height / 2,
+                        size: 20,
+                        color: '#ff5555',
+                        life: 1.5,
+                        maxLife: 1.5
+                    });
+                }
+            }
+            
+            // Clear wall cells gradually with animation
+            fadeOutWalls();
+        }
+        
+        function fadeOutWalls() {
+            const fadeInterval = 50; // ms
+            const wallsPerInterval = 5;
+            
+            const fadeTimer = setInterval(() => {
+                if (wallCells.length === 0) {
+                    clearInterval(fadeTimer);
+                    return;
+                }
+                
+                // Remove a few walls at a time for a nice animation effect
+                for (let i = 0; i < Math.min(wallsPerInterval, wallCells.length); i++) {
+                    wallCells.shift();
+                }
+                
+            }, fadeInterval);
+        }
+        
+        // Visual effects system
+        function addEffect(effect) {
+            effectsQueue.push(effect);
+        }
+        
+        function processEffects(deltaTime) {
+            for (let i = effectsQueue.length - 1; i >= 0; i--) {
+                effectsQueue[i].life -= deltaTime;
+                if (effectsQueue[i].life <= 0) {
+                    effectsQueue.splice(i, 1);
+                }
+            }
+        }
+        
+        function drawEffects() {
+            effectsQueue.forEach(effect => {
+                if (effect.type === 'popup') {
+                    // Calculate fade and position
+                    const progress = 1 - (effect.life / effect.maxLife);
+                    const y = effect.y - progress * 30; // Move up as it fades
+                    const alpha = Math.min(1, 2 * (1 - progress));
+                    
+                    // Set text style
+                    ctx.font = `bold ${effect.size || 16}px Arial`;
+                    ctx.fillStyle = effect.color + Math.floor(alpha * 255).toString(16).padStart(2, '0');
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    
+                    // Draw text
+                    ctx.fillText(effect.text, effect.x, y);
+                }
+            });
+        }
+        
+        // Add direct event listener for Play Again button
+        document.getElementById('playAgainBtn').addEventListener('click', function() {
+            window.location.reload();
+        });
+        
+        // Add touch event listener as fallback
+        document.getElementById('playAgainBtn').addEventListener('touchend', function() {
+            window.location.reload();
+        });
+        
+        // Virtual joystick controls
+        const joystickButton = document.getElementById('joystickButton');
+        const joystickContainer = document.querySelector('.joystick-container');
+        let joystickActive = false;
+        let joystickCenter = { x: 0, y: 0 };
+        
+        function getJoystickCenter() {
+            const rect = joystickContainer.getBoundingClientRect();
+            return {
+                x: rect.left + rect.width / 2,
+                y: rect.top + rect.height / 2
+            };
+        }
+        
+        function handleJoystickStart(e) {
+            joystickActive = true;
+            joystickCenter = getJoystickCenter();
+            updateJoystickPosition(getEventPosition(e));
+            e.preventDefault();
+        }
+        
+        function handleJoystickMove(e) {
+            if (joystickActive) {
+                updateJoystickPosition(getEventPosition(e));
+                e.preventDefault();
+            }
+        }
+        
+        function handleJoystickEnd(e) {
+            joystickActive = false;
+            resetJoystickPosition();
+            e.preventDefault();
+        }
+        
+        function getEventPosition(e) {
+            const pos = {
+                x: e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0),
+                y: e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0)
+            };
+            return pos;
+        }
+        
+        function updateJoystickPosition(pos) {
+            const deltaX = pos.x - joystickCenter.x;
+            const deltaY = pos.y - joystickCenter.y;
+            const distance = Math.min(Math.sqrt(deltaX * deltaX + deltaY * deltaY), 50);
+            const angle = Math.atan2(deltaY, deltaX);
+            
+            const newX = distance * Math.cos(angle);
+            const newY = distance * Math.sin(angle);
+            
+            joystickButton.style.transform = `translate(calc(-50% + ${newX}px), calc(-50% + ${newY}px))`;
+            
+            // Update direction based on joystick position
+            if (distance > 20) {
+                const absX = Math.abs(deltaX);
+                const absY = Math.abs(deltaY);
+                
+                if (absX > absY) {
+                    if (deltaX > 0 && direction !== 'left') {
+                        nextDirection = 'right';
+                    } else if (deltaX < 0 && direction !== 'right') {
+                        nextDirection = 'left';
+                    }
+                } else {
+                    if (deltaY > 0 && direction !== 'up') {
+                        nextDirection = 'down';
+                    } else if (deltaY < 0 && direction !== 'down') {
+                        nextDirection = 'up';
+                    }
+                }
+            }
+        }
+        
+        function resetJoystickPosition() {
+            joystickButton.style.transform = 'translate(-50%, -50%)';
+        }
+        
+        // Add joystick event listeners
+        joystickContainer.addEventListener('mousedown', handleJoystickStart);
+        joystickContainer.addEventListener('touchstart', handleJoystickStart, { passive: false });
+        window.addEventListener('mousemove', handleJoystickMove);
+        window.addEventListener('touchmove', handleJoystickMove, { passive: false });
+        window.addEventListener('mouseup', handleJoystickEnd);
+        window.addEventListener('touchend', handleJoystickEnd, { passive: false });
+        
+        // Keep original swipe controls on canvas for backward compatibility
+        let touchStartX = 0;
+        let touchStartY = 0;
+        
+        canvas.addEventListener('touchstart', function(e) {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            e.preventDefault();
+        }, {passive: false});
+        
+        canvas.addEventListener('touchend', function(e) {
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            
+            // Determine direction
+            if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                if (deltaX > 20) {
+                    if (direction !== 'left') nextDirection = 'right';
+                } else if (deltaX < -20) {
+                    if (direction !== 'right') nextDirection = 'left';
+                }
+            } else {
+                if (deltaY > 20) {
+                    if (direction !== 'up') nextDirection = 'down';
+                } else if (deltaY < -20) {
+                    if (direction !== 'down') nextDirection = 'up';
+                }
+            }
+            
+            e.preventDefault();
+        }, {passive: false});
+        
+        // Keyboard controls
+        document.addEventListener('keydown', function(e) {
+            switch (e.key) {
+                case 'ArrowUp':
+                    if (direction !== 'down') nextDirection = 'up';
+                    break;
+                case 'ArrowDown':
+                    if (direction !== 'up') nextDirection = 'down';
+                    break;
+                case 'ArrowLeft':
+                    if (direction !== 'right') nextDirection = 'left';
+                    break;
+                case 'ArrowRight':
+                    if (direction !== 'left') nextDirection = 'right';
+                    break;
+            }
+        });
+        
+        // Game over
+        function showGameOver() {
+            gameOver = true;
+            
+            // Check high score
+            let isNewHighScore = false;
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('snakeHighScore', highScore);
+                isNewHighScore = true;
+            }
+            
+            // Update game over screen
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('newHighScoreText').style.display = 
+                isNewHighScore ? 'block' : 'none';
+            
+            // Show game over screen
+            document.getElementById('gameOver').style.display = 'flex';
+        }
+        
+        // Start game
+        window.onload = function() {
+            drawGame();
+            requestAnimationFrame(gameLoop);
+        };
+        
+        // Share functionality
+        function showShareModal() {
+            document.getElementById('shareModal').style.display = 'flex';
+            document.getElementById('playerName').focus();
+        }
+        
+        function hideShareModal() {
+            document.getElementById('shareModal').style.display = 'none';
+        }
+        
+        function showShareResult() {
+            const playerName = document.getElementById('playerName').value.trim() || 'Anonymous';
+            document.getElementById('shareModal').style.display = 'none';
+            
+            // Update player name
+            document.getElementById('resultPlayerName').textContent = playerName;
+            
+            // Clear the score display div
+            const scoreDisplay = document.getElementById('resultHighScore');
+            scoreDisplay.innerHTML = '';
+            
+            // Create a score image instead of text
+            const scoreCanvas = document.createElement('canvas');
+            scoreCanvas.width = 150;
+            scoreCanvas.height = 50;
+            scoreCanvas.style.display = 'inline-block';
+            
+            const ctx = scoreCanvas.getContext('2d');
+            
+            // Fill background
+            ctx.fillStyle = '#333333';
+            ctx.fillRect(0, 0, scoreCanvas.width, scoreCanvas.height);
+            
+            // Draw score text
+            ctx.fillStyle = '#e0e0e0';
+            ctx.font = 'bold 32px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(highScore.toString(), scoreCanvas.width / 2, scoreCanvas.height / 2);
+            
+            // Add a subtle pattern to make it harder to edit
+            for (let i = 0; i < 20; i++) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+                ctx.fillRect(
+                    Math.random() * scoreCanvas.width,
+                    Math.random() * scoreCanvas.height,
+                    2,
+                    2
+                );
+            }
+            
+            // Convert canvas to image
+            const scoreImage = document.createElement('img');
+            scoreImage.src = scoreCanvas.toDataURL();
+            scoreImage.style.borderRadius = '5px';
+            scoreImage.style.pointerEvents = 'none';
+            scoreImage.style.userSelect = 'none';
+            scoreImage.style.webkitUserSelect = 'none';
+            scoreImage.style.mozUserSelect = 'none';
+            
+            // Add the image to the score display
+            scoreDisplay.appendChild(scoreImage);
+            
+            // Show share result
+            document.getElementById('shareResult').style.display = 'flex';
+        }
+        
+        function closeShareResult() {
+            document.getElementById('shareResult').style.display = 'none';
+        }
+        
+        // Add the expansion and contraction functions
+        function expandCanvas() {
+            const expansionInterval = setInterval(() => {
+                if (currentExpansion >= maxCanvasExpansion || !wallModeActive) {
+                    clearInterval(expansionInterval);
+                    return;
+                }
+                
+                currentExpansion += expansionSpeed;
+                canvasSize = baseCanvasSize + currentExpansion;
+                playableGridSize = Math.floor(canvasSize / gridSize);
+                
+                // Update canvas size
+                canvas.width = canvasSize;
+                canvas.height = canvasSize;
+                
+            }, 100);
+        }
+        
+        function contractCanvas() {
+            const contractionInterval = setInterval(() => {
+                if (currentExpansion <= 0) {
+                    clearInterval(contractionInterval);
+                    canvasSize = baseCanvasSize;
+                    playableGridSize = Math.floor(canvasSize / gridSize);
+                    canvas.width = canvasSize;
+                    canvas.height = canvasSize;
+                    
+                    // Validate all food positions after contraction is complete
+                    validateFoodPositions();
+                    return;
+                }
+                
+                currentExpansion -= expansionSpeed;
+                canvasSize = baseCanvasSize + currentExpansion;
+                playableGridSize = Math.floor(canvasSize / gridSize);
+                
+                // Update canvas size
+                canvas.width = canvasSize;
+                canvas.height = canvasSize;
+                
+                // Check if any food is now outside the playable area
+                validateFoodPositions();
+                
+            }, 100);
+        }
+        
+        // Function to validate and regenerate food if it's outside the playable area
+        function validateFoodPositions() {
+            // Check regular food
+            const maxPos = Math.floor(canvasSize / gridSize) - 1;
+            if (food.x > maxPos || food.y > maxPos) {
+                generateFood();
+            }
+            
+            // Check bonus food
+            for (let i = bonusFood.length - 1; i >= 0; i--) {
+                if (bonusFood[i].x > maxPos || bonusFood[i].y > maxPos) {
+                    bonusFood.splice(i, 1);
+                    
+                    // Generate a new food item in a valid position
+                    let newFood;
+                    let attempts = 0;
+                    const maxAttempts = 50;
+                    
+                    do {
+                        newFood = {
+                            x: Math.floor(Math.random() * maxPos),
+                            y: Math.floor(Math.random() * maxPos)
+                        };
+                        attempts++;
+                        
+                        if (attempts > maxAttempts) break;
+                    } while (!isValidFoodPosition(newFood.x, newFood.y));
+                    
+                    // Only add if we found a valid position
+                    if (newFood && attempts <= maxAttempts) {
+                        bonusFood.push(newFood);
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html> 
